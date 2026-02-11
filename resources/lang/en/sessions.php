@@ -53,8 +53,12 @@ return [
 
     'notifications' => [
         'connecting' => 'Session is connecting...',
+        'connected' => 'Session connected successfully!',
         'connect_failed' => 'Failed to connect session.',
         'disconnected' => 'Session disconnected successfully.',
         'disconnect_failed' => 'Failed to disconnect session.',
+        'status_synced' => 'Session status synced.',
+        'current_status' => 'Current status: :status',
+        'sync_failed' => 'Failed to sync session status.',
     ],
 ];

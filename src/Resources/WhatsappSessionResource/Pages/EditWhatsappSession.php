@@ -19,6 +19,29 @@ class EditWhatsappSession extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('refresh_status')
+                ->label(__('refineder-crm::sessions.actions.refresh_status'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->action(function (WasenderService $wasender) {
+                    try {
+                        $newStatus = $wasender->syncSessionStatus($this->record);
+                        $this->record->refresh();
+
+                        Notification::make()
+                            ->title(__('refineder-crm::sessions.notifications.status_synced'))
+                            ->body(__('refineder-crm::sessions.notifications.current_status', ['status' => $newStatus->label()]))
+                            ->success()
+                            ->send();
+                    } catch (\Exception $e) {
+                        Notification::make()
+                            ->title(__('refineder-crm::sessions.notifications.sync_failed'))
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                }),
+
             Action::make('connect')
                 ->label(__('refineder-crm::sessions.actions.connect'))
                 ->icon('heroicon-o-signal')
@@ -28,11 +51,22 @@ class EditWhatsappSession extends EditRecord
                 ->action(function (WasenderService $wasender) {
                     try {
                         $wasender->connectSession($this->record);
+                        $this->record->refresh();
 
-                        Notification::make()
-                            ->title(__('refineder-crm::sessions.notifications.connecting'))
-                            ->success()
-                            ->send();
+                        $statusLabel = $this->record->status->label();
+
+                        if ($this->record->status === SessionStatus::Connected) {
+                            Notification::make()
+                                ->title(__('refineder-crm::sessions.notifications.connected'))
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title(__('refineder-crm::sessions.notifications.connecting'))
+                                ->body(__('refineder-crm::sessions.notifications.current_status', ['status' => $statusLabel]))
+                                ->info()
+                                ->send();
+                        }
                     } catch (\Exception $e) {
                         Notification::make()
                             ->title(__('refineder-crm::sessions.notifications.connect_failed'))
@@ -51,6 +85,7 @@ class EditWhatsappSession extends EditRecord
                 ->action(function (WasenderService $wasender) {
                     try {
                         $wasender->disconnectSession($this->record);
+                        $this->record->refresh();
 
                         Notification::make()
                             ->title(__('refineder-crm::sessions.notifications.disconnected'))

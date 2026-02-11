@@ -53,8 +53,12 @@ return [
 
     'notifications' => [
         'connecting' => 'جاري الاتصال بالجلسة...',
+        'connected' => 'تم الاتصال بالجلسة بنجاح!',
         'connect_failed' => 'فشل الاتصال بالجلسة.',
         'disconnected' => 'تم قطع الاتصال بنجاح.',
         'disconnect_failed' => 'فشل قطع الاتصال.',
+        'status_synced' => 'تم مزامنة حالة الجلسة.',
+        'current_status' => 'الحالة الحالية: :status',
+        'sync_failed' => 'فشل مزامنة حالة الجلسة.',
     ],
 ];

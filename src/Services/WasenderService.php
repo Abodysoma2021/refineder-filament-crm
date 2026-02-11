@@ -190,9 +190,25 @@ class WasenderService
 
         $session->update(['status' => SessionStatus::Connecting]);
 
-        $response = $client->connectWhatsAppSession((int) $session->session_id);
+        try {
+            $response = $client->connectWhatsAppSession((int) $session->session_id);
 
-        return $response;
+            // Check response to determine actual status
+            $this->syncSessionStatus($session);
+
+            return $response;
+        } catch (\Exception $e) {
+            // Handle "already connected" gracefully
+            if (str_contains($e->getMessage(), 'already connected')) {
+                $session->update(['status' => SessionStatus::Connected]);
+
+                return ['success' => true, 'message' => 'Session is already connected'];
+            }
+
+            $session->update(['status' => SessionStatus::Disconnected]);
+
+            throw $e;
+        }
     }
 
     /**
@@ -202,11 +218,54 @@ class WasenderService
     {
         $client = $this->getManagementClient($session);
 
-        $response = $client->disconnectWhatsAppSession((int) $session->session_id);
+        try {
+            $response = $client->disconnectWhatsAppSession((int) $session->session_id);
 
-        $session->update(['status' => SessionStatus::Disconnected]);
+            $session->update(['status' => SessionStatus::Disconnected]);
 
-        return $response;
+            return $response;
+        } catch (\Exception $e) {
+            // Handle "already disconnected" gracefully
+            if (str_contains($e->getMessage(), 'not connected') || str_contains($e->getMessage(), 'already disconnected')) {
+                $session->update(['status' => SessionStatus::Disconnected]);
+
+                return ['success' => true, 'message' => 'Session is already disconnected'];
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Sync local session status with WasenderAPI remote status.
+     */
+    public function syncSessionStatus(WhatsappSession $session): SessionStatus
+    {
+        $client = $this->getManagementClient($session);
+
+        try {
+            $details = $client->getWhatsAppSessionDetails((int) $session->session_id);
+
+            $remoteStatus = $details['data']['status'] ?? ($details['status'] ?? null);
+
+            $newStatus = match (strtolower((string) $remoteStatus)) {
+                'connected', 'open', 'active' => SessionStatus::Connected,
+                'connecting', 'loading' => SessionStatus::Connecting,
+                'qr', 'qr_pending', 'scan_qr' => SessionStatus::QrPending,
+                default => SessionStatus::Disconnected,
+            };
+
+            $session->update(['status' => $newStatus]);
+
+            return $newStatus;
+        } catch (\Exception $e) {
+            Log::error('Refineder CRM: Failed to sync session status', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $session->status;
+        }
     }
 
     /**
