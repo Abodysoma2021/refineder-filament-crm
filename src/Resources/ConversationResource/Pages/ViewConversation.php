@@ -14,7 +14,7 @@ class ViewConversation extends ViewRecord
 {
     protected static string $resource = ConversationResource::class;
 
-    protected static string $view = 'refineder-crm::livewire.conversation-view';
+    protected string $view = 'refineder-crm::livewire.conversation-view';
 
     protected function getHeaderActions(): array
     {
