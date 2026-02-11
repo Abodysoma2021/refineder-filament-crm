@@ -1,0 +1,34 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('crm_whatsapp_sessions', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->index();
+            $table->string('name');
+            $table->string('phone_number')->nullable();
+            $table->string('session_id')->nullable()->comment('WasenderAPI session ID');
+            $table->text('api_key')->nullable()->comment('Encrypted WasenderAPI session key');
+            $table->text('personal_access_token')->nullable()->comment('Encrypted PAT for session management');
+            $table->text('webhook_secret')->nullable()->comment('Encrypted webhook verification secret');
+            $table->string('webhook_url')->nullable();
+            $table->string('status')->default('disconnected');
+            $table->boolean('is_default')->default(false);
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+
+            $table->index(['user_id', 'status']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('crm_whatsapp_sessions');
+    }
+};

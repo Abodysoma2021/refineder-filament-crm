@@ -1,0 +1,62 @@
+---
+description: Project-specific conventions for the Refineder Filament CRM plugin
+alwaysApply: true
+---
+
+# Refineder Filament CRM - Project Conventions
+
+## Package Identity
+- Vendor: `refineder`
+- Package: `filament-crm`
+- Namespace: `Refineder\FilamentCrm`
+- Plugin ID: `refineder-crm`
+- Config key: `refineder-crm`
+- Table prefix: `crm_`
+- Translation namespace: `refineder-crm`
+
+## Directory Structure
+```
+src/
+├── RefinederCrmPlugin.php          # Filament Plugin class
+├── RefinederCrmServiceProvider.php  # Spatie PackageServiceProvider
+├── Models/                         # Eloquent models
+├── Resources/                      # Filament resources with Pages/, Schemas/, Tables/
+├── Livewire/                       # Livewire components (ChatBox, etc.)
+├── Http/Controllers/               # Webhook controller
+├── Services/                       # WasenderService wrapper
+├── Enums/                          # PHP 8.1+ enums
+├── Events/                         # Laravel events
+├── Widgets/                        # Filament dashboard widgets
+└── Traits/                         # Shared traits
+```
+
+## Database Tables
+- `crm_contacts` - Customer contacts
+- `crm_conversations` - Chat conversations
+- `crm_messages` - Individual messages
+- `crm_deals` - Sales deals/opportunities
+- `crm_deal_stages` - Deal pipeline stages
+- `crm_whatsapp_sessions` - WhatsApp session configs
+
+## Key Principles
+1. Multi-tenant support - scope by team/user
+2. Multi-session - support multiple WhatsApp accounts
+3. Real-time - use Livewire polling/events for chat
+4. Extensible - allow users to customize models, resources
+5. Translation-ready - all strings through `__('refineder-crm::...')`
+6. Use PHP Enums for statuses and types
+7. Never hardcode WasenderAPI URLs - use config
+8. All webhook routes must be verifiable
+9. Support both Arabic and English out of the box
+
+## Model Conventions
+- All models extend `Illuminate\Database\Eloquent\Model`
+- Use `HasFactory` trait
+- Define `$table` with `crm_` prefix
+- Use `$casts` for JSON fields and enums
+- Define relationships explicitly
+
+## Testing Approach
+- Use Pest PHP for testing
+- Mock WasenderClient for API tests
+- Use Filament testing utilities for resource tests

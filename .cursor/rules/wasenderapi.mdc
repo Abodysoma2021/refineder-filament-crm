@@ -1,0 +1,90 @@
+---
+description: WasenderAPI integration patterns and webhook handling for WhatsApp messaging
+alwaysApply: true
+---
+
+# WasenderAPI Integration Standards
+
+## SDK
+- Package: `wasenderapi/wasenderapi-laravel`
+- Client: `WasenderApi\WasenderClient`
+- Facade: `WasenderApi\Facades\WasenderApi`
+
+## Authentication
+- Session API Key: `Authorization: Bearer {SESSION_API_KEY}` for per-session operations
+- Personal Access Token: For session management (CRUD)
+- Each WhatsApp session has its own unique API key
+- Use direct instantiation `new WasenderClient($apiKey)` for multi-session support
+
+## Message Sending (POST /api/send-message)
+```php
+$client = new WasenderClient($session->api_key);
+$client->sendText($to, $text);
+$client->sendImage($to, $url, $caption);
+$client->sendDocument($to, $url, $fileName, $caption);
+$client->sendAudio($to, $url);
+$client->sendLocation($to, $lat, $lng, $name, $address);
+$client->sendContact($to, $contactName, $contactPhone);
+```
+
+## Webhook Events
+- `messages.received` - Incoming messages only
+- `messages.upsert` - All messages (incoming + outgoing)
+- `messages-personal.received` - Private chat messages
+- `messages-group.received` - Group chat messages
+- `message.sent` - Outgoing messages confirmation
+- `messages.update` - Message status updates (delivered, read)
+- `messages.delete` - Deleted messages
+- `messages.reaction` - Message reactions
+- `session.status` - Session connection changes
+- `qr.updated` - New QR code generated
+- `chats.upsert` / `chats.update` / `chats.delete`
+- `groups.upsert` / `groups.update`
+- `groups-participants.update`
+
+## Webhook Payload Structure
+```json
+{
+  "event": "messages.received",
+  "timestamp": 1633456789,
+  "data": {
+    "messages": {
+      "key": {
+        "id": "3EB0X123456789",
+        "fromMe": false,
+        "remoteJid": "123456789@lid",
+        "cleanedSenderPn": "5551234567",
+        "senderLid": "123456789@lid"
+      },
+      "messageBody": "Hello! This is a test.",
+      "message": {
+        "conversation": "Hello! This is a test."
+      }
+    }
+  }
+}
+```
+
+## Webhook Verification
+- Header: `X-Webhook-Signature`
+- Simple string comparison with stored secret
+- Always return 200 OK quickly
+
+## Key Fields
+- `key.cleanedSenderPn` - Sender phone (private chats)
+- `key.cleanedParticipantPn` - Sender phone (group chats)
+- `key.remoteJid` - Chat ID (may be LID, not phone number)
+- `messageBody` - Unified text content (always use this)
+- `message.imageMessage` / `videoMessage` / `audioMessage` - Media content
+
+## Session Management
+- GET /api/whatsapp-sessions - List sessions
+- POST /api/whatsapp-sessions - Create session
+- POST /api/whatsapp-sessions/{id}/connect - Connect
+- POST /api/whatsapp-sessions/{id}/disconnect - Disconnect
+- GET /api/whatsapp-sessions/{id}/qrcode - Get QR code
+- DELETE /api/whatsapp-sessions/{id} - Delete
+
+## Media Decryption
+- Use POST /api/decrypt-media endpoint
+- Returns temporary publicUrl (1 hour validity)
