@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Refineder\FilamentCrm\Resources\WhatsappSessionResource;
 
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -18,7 +19,7 @@ class WhatsappSessionResource extends Resource
 {
     protected static ?string $model = WhatsappSession::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-device-phone-mobile';
 
     protected static ?int $navigationSort = 10;
 

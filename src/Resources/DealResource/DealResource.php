@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Refineder\FilamentCrm\Resources\DealResource;
 
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -20,7 +21,7 @@ class DealResource extends Resource
 {
     protected static ?string $model = CrmDeal::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
 
     protected static ?int $navigationSort = 3;
 
@@ -51,7 +52,7 @@ class DealResource extends Resource
         return (string) static::getModel()::open()->count();
     }
 
-    public static function getNavigationBadgeColor(): ?string
+    public static function getNavigationBadgeColor(): string | array | null
     {
         $count = static::getModel()::open()->count();
 

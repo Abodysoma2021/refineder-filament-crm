@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Refineder\FilamentCrm\Resources\ContactResource;
 
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -19,7 +20,7 @@ class ContactResource extends Resource
 {
     protected static ?string $model = CrmContact::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
     protected static ?int $navigationSort = 1;
 

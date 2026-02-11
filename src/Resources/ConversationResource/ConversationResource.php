@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Refineder\FilamentCrm\Resources\ConversationResource;
 
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -16,7 +17,7 @@ class ConversationResource extends Resource
 {
     protected static ?string $model = CrmConversation::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
     protected static ?int $navigationSort = 2;
 
@@ -47,7 +48,7 @@ class ConversationResource extends Resource
         return $count > 0 ? (string) $count : null;
     }
 
-    public static function getNavigationBadgeColor(): ?string
+    public static function getNavigationBadgeColor(): string | array | null
     {
         return 'danger';
     }
