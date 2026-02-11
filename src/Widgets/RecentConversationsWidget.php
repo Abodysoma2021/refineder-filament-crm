@@ -13,7 +13,7 @@ class RecentConversationsWidget extends BaseWidget
 {
     protected static ?int $sort = -2;
 
-    protected static ?string $pollingInterval = '10s';
+    protected ?string $pollingInterval = '10s';
 
     protected int | string | array $columnSpan = 'full';
 
