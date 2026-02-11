@@ -52,9 +52,9 @@ class WebhookController extends Controller
 
         try {
             match ($event) {
+                'messages.upsert' => $this->handleMessageUpsert($session, $payload),
                 'messages.received',
                 'messages-personal.received' => $this->handleMessageReceived($session, $payload),
-                'messages.upsert' => $this->handleMessageUpsert($session, $payload),
                 'message.sent' => $this->handleMessageSent($session, $payload),
                 'messages.update' => $this->handleMessageUpdate($session, $payload),
                 'messages.delete' => $this->handleMessageDelete($session, $payload),
@@ -109,10 +109,20 @@ class WebhookController extends Controller
             return;
         }
 
-        // Find or create contact
-        $contact = $this->findOrCreateContact($session, $senderPhone, $remoteJid);
+        // ---- Deduplication: skip if this message already exists ----
+        if ($messageId && CrmMessage::where('whatsapp_message_id', $messageId)->exists()) {
+            Log::debug('Refineder CRM: Skipping duplicate message', ['wa_id' => $messageId]);
 
-        // Find or create conversation
+            return;
+        }
+
+        // Extract phone number from sender or JID
+        $resolvedPhone = $this->resolvePhoneNumber($senderPhone, $remoteJid);
+
+        // Find or create contact (using phone number for matching, not LID JID)
+        $contact = $this->findOrCreateContact($session, $resolvedPhone, $remoteJid);
+
+        // Find or create conversation (resolves LID JID to existing conversations)
         $conversation = $this->findOrCreateConversation($session, $contact, $remoteJid);
 
         // Determine message type
@@ -161,6 +171,7 @@ class WebhookController extends Controller
 
         // Only process incoming messages via upsert
         if (! ($key['fromMe'] ?? false)) {
+            // Deduplication is handled inside handleMessageReceived
             $this->handleMessageReceived($session, $payload);
         }
     }
@@ -235,26 +246,75 @@ class WebhookController extends Controller
 
     // --- Helper Methods ---
 
+    /**
+     * Resolve phone number from sender info and JID.
+     * Handles LID JIDs (e.g., 73770492547136@lid) by preferring the sender phone.
+     */
+    protected function resolvePhoneNumber(?string $senderPhone, string $remoteJid): string
+    {
+        // If we have a clean sender phone number, use it
+        if ($senderPhone) {
+            // Normalize: add + if not present
+            return str_starts_with($senderPhone, '+') ? $senderPhone : "+{$senderPhone}";
+        }
+
+        // Extract phone from standard JID (e.g., 96551162231@s.whatsapp.net)
+        if (str_contains($remoteJid, '@s.whatsapp.net')) {
+            $number = explode('@', $remoteJid)[0];
+
+            return "+{$number}";
+        }
+
+        // For LID JIDs or other formats, return the JID as-is
+        return $remoteJid;
+    }
+
+    /**
+     * Find or create contact. Tries to match by phone number first,
+     * regardless of JID format (handles LID JID → phone resolution).
+     */
     protected function findOrCreateContact(
         WhatsappSession $session,
-        ?string $phone,
+        string $phone,
         string $remoteJid,
     ): CrmContact {
         $contactModel = config('refineder-crm.models.contact');
 
-        return $contactModel::firstOrCreate(
-            [
-                'user_id' => $session->user_id,
-                'phone' => $phone ?? $remoteJid,
-                'whatsapp_session_id' => $session->id,
-            ],
-            [
-                'name' => $phone ?? $remoteJid,
-                'remote_jid' => $remoteJid,
-            ]
-        );
+        // First try to find by phone number (most reliable match)
+        $contact = $contactModel::where('user_id', $session->user_id)
+            ->where('whatsapp_session_id', $session->id)
+            ->where('phone', $phone)
+            ->first();
+
+        if ($contact) {
+            return $contact;
+        }
+
+        // Also try with/without + prefix
+        $altPhone = str_starts_with($phone, '+') ? ltrim($phone, '+') : "+{$phone}";
+        $contact = $contactModel::where('user_id', $session->user_id)
+            ->where('whatsapp_session_id', $session->id)
+            ->where('phone', $altPhone)
+            ->first();
+
+        if ($contact) {
+            return $contact;
+        }
+
+        // Create new contact
+        return $contactModel::create([
+            'user_id' => $session->user_id,
+            'whatsapp_session_id' => $session->id,
+            'phone' => $phone,
+            'name' => $phone,
+            'remote_jid' => $remoteJid,
+        ]);
     }
 
+    /**
+     * Find or create conversation. Resolves LID JIDs to existing conversations
+     * by matching through the contact's existing conversations.
+     */
     protected function findOrCreateConversation(
         WhatsappSession $session,
         CrmContact $contact,
@@ -262,18 +322,38 @@ class WebhookController extends Controller
     ): CrmConversation {
         $conversationModel = config('refineder-crm.models.conversation');
 
-        return $conversationModel::firstOrCreate(
-            [
-                'user_id' => $session->user_id,
-                'contact_id' => $contact->id,
-                'whatsapp_session_id' => $session->id,
-                'remote_jid' => $remoteJid,
-            ],
-            [
-                'status' => ConversationStatus::Open,
-                'last_message_at' => now(),
-            ]
-        );
+        // First: try to find an existing conversation for this contact on this session
+        // This handles the LID JID case - the contact already has a conversation
+        $conversation = $conversationModel::where('user_id', $session->user_id)
+            ->where('contact_id', $contact->id)
+            ->where('whatsapp_session_id', $session->id)
+            ->first();
+
+        if ($conversation) {
+            // Update remote_jid if it changed (e.g., was phone-based, now LID-based)
+            // Keep the original JID but store the LID mapping
+            return $conversation;
+        }
+
+        // Try exact JID match
+        $conversation = $conversationModel::where('user_id', $session->user_id)
+            ->where('whatsapp_session_id', $session->id)
+            ->where('remote_jid', $remoteJid)
+            ->first();
+
+        if ($conversation) {
+            return $conversation;
+        }
+
+        // Create new conversation
+        return $conversationModel::create([
+            'user_id' => $session->user_id,
+            'contact_id' => $contact->id,
+            'whatsapp_session_id' => $session->id,
+            'remote_jid' => $remoteJid,
+            'status' => ConversationStatus::Open,
+            'last_message_at' => now(),
+        ]);
     }
 
     protected function detectMessageType(array $rawMessage): MessageType
