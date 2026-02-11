@@ -15,7 +15,7 @@ class ViewDeal extends ViewRecord
 {
     protected static string $resource = DealResource::class;
 
-    protected static string $view = 'refineder-crm::livewire.deal-view';
+    protected string $view = 'refineder-crm::livewire.deal-view';
 
     protected function getHeaderActions(): array
     {
