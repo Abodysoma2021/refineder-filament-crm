@@ -6,6 +6,7 @@ namespace Refineder\FilamentCrm\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Refineder\FilamentCrm\Enums\DealPriority;
 use Refineder\FilamentCrm\Enums\DealStage;
 
@@ -44,6 +45,24 @@ class CrmDeal extends Model
         return $this->belongsTo(config('refineder-crm.models.deal_stage'), 'deal_stage_id');
     }
 
+    /**
+     * Get all messages for this deal through its conversation.
+     */
+    public function messages(): HasManyThrough
+    {
+        $conversationModel = config('refineder-crm.models.conversation', CrmConversation::class);
+        $messageModel = config('refineder-crm.models.message', CrmMessage::class);
+
+        return $this->hasManyThrough(
+            $messageModel,
+            $conversationModel,
+            'id',             // conversations.id
+            'conversation_id', // messages.conversation_id
+            'conversation_id', // deals.conversation_id
+            'id',             // conversations.id
+        );
+    }
+
     // --- Scopes ---
 
     public function scopeForUser($query, $userId)
@@ -72,6 +91,11 @@ class CrmDeal extends Model
     }
 
     // --- Helpers ---
+
+    public function hasConversation(): bool
+    {
+        return $this->conversation_id !== null;
+    }
 
     public function isClosed(): bool
     {
