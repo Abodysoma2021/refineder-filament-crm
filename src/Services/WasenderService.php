@@ -17,11 +17,27 @@ use WasenderApi\WasenderClient;
 class WasenderService
 {
     /**
-     * Get a WasenderClient instance for a specific session.
+     * Get a WasenderClient instance for a specific session (uses session API key for messaging).
      */
     public function getClient(WhatsappSession $session): WasenderClient
     {
         return new WasenderClient($session->api_key);
+    }
+
+    /**
+     * Get a WasenderClient instance configured with personal access token (for session management).
+     */
+    public function getManagementClient(WhatsappSession $session): WasenderClient
+    {
+        $client = new WasenderClient($session->api_key);
+
+        // Set personal access token via config for session management operations
+        if ($session->personal_access_token) {
+            config(['wasenderapi.personal_access_token' => $session->personal_access_token]);
+            $client = new WasenderClient($session->api_key);
+        }
+
+        return $client;
     }
 
     /**
@@ -170,11 +186,11 @@ class WasenderService
      */
     public function connectSession(WhatsappSession $session): array
     {
-        $client = $this->getClient($session);
+        $client = $this->getManagementClient($session);
 
         $session->update(['status' => SessionStatus::Connecting]);
 
-        $response = $client->connectWhatsAppSession($session->session_id);
+        $response = $client->connectWhatsAppSession((int) $session->session_id);
 
         return $response;
     }
@@ -184,9 +200,9 @@ class WasenderService
      */
     public function disconnectSession(WhatsappSession $session): array
     {
-        $client = $this->getClient($session);
+        $client = $this->getManagementClient($session);
 
-        $response = $client->disconnectWhatsAppSession($session->session_id);
+        $response = $client->disconnectWhatsAppSession((int) $session->session_id);
 
         $session->update(['status' => SessionStatus::Disconnected]);
 
@@ -198,10 +214,10 @@ class WasenderService
      */
     public function getQrCode(WhatsappSession $session): ?string
     {
-        $client = $this->getClient($session);
+        $client = $this->getManagementClient($session);
 
         try {
-            $response = $client->getWhatsAppSessionQrCode($session->session_id);
+            $response = $client->getWhatsAppSessionQrCode((int) $session->session_id);
 
             return $response['data']['qr'] ?? null;
         } catch (\Exception $e) {
@@ -219,10 +235,10 @@ class WasenderService
      */
     public function getSessionStatus(WhatsappSession $session): ?string
     {
-        $client = $this->getClient($session);
+        $client = $this->getManagementClient($session);
 
         try {
-            $response = $client->getSessionStatus($session->session_id);
+            $response = $client->getSessionStatus((string) $session->session_id);
 
             return $response['data']['status'] ?? null;
         } catch (\Exception $e) {
@@ -232,6 +248,43 @@ class WasenderService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * Fetch all WhatsApp sessions from WasenderAPI using personal access token.
+     */
+    public function fetchRemoteSessions(WhatsappSession $session): array
+    {
+        $client = $this->getManagementClient($session);
+
+        try {
+            return $client->getAllWhatsAppSessions();
+        } catch (\Exception $e) {
+            Log::error('Refineder CRM: Failed to fetch remote sessions', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * Get details for a specific session from WasenderAPI.
+     */
+    public function getSessionDetails(WhatsappSession $session): array
+    {
+        $client = $this->getManagementClient($session);
+
+        try {
+            return $client->getWhatsAppSessionDetails((int) $session->session_id);
+        } catch (\Exception $e) {
+            Log::error('Refineder CRM: Failed to get session details', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
         }
     }
 }

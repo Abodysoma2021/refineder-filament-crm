@@ -41,6 +41,7 @@ class WhatsappSessionForm
                 ->schema([
                     TextInput::make('session_id')
                         ->label(__('refineder-crm::sessions.form.session_id'))
+                        ->numeric()
                         ->helperText(__('refineder-crm::sessions.form.session_id_help')),
 
                     TextInput::make('api_key')
@@ -53,6 +54,7 @@ class WhatsappSessionForm
                         ->label(__('refineder-crm::sessions.form.personal_access_token'))
                         ->password()
                         ->revealable()
+                        ->required()
                         ->helperText(__('refineder-crm::sessions.form.personal_access_token_help')),
                 ]),
 
