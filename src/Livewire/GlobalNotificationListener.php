@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Refineder\FilamentCrm\Livewire;
 
-use Filament\Notifications\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -58,8 +58,7 @@ class GlobalNotificationListener extends Component
                     ->label(__('refineder-crm::notifications.view_deal'))
                     ->url(DealResource::getUrl('view', ['record' => $dealId]))
                     ->button()
-                    ->color('primary')
-                    ->size('sm'),
+                    ->color('primary'),
             ]);
         }
 
