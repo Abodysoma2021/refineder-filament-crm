@@ -20,5 +20,6 @@ return [
         'delivered' => 'تم التسليم',
         'read' => 'مقروءة',
         'failed' => 'فشلت',
+        'received' => 'مُستلمة',
     ],
 ];

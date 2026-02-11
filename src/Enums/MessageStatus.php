@@ -11,6 +11,7 @@ enum MessageStatus: string
     case Delivered = 'delivered';
     case Read = 'read';
     case Failed = 'failed';
+    case Received = 'received';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum MessageStatus: string
             self::Delivered => __('refineder-crm::messages.statuses.delivered'),
             self::Read => __('refineder-crm::messages.statuses.read'),
             self::Failed => __('refineder-crm::messages.statuses.failed'),
+            self::Received => __('refineder-crm::messages.statuses.received'),
         };
     }
 
@@ -31,6 +33,7 @@ enum MessageStatus: string
             self::Delivered => 'primary',
             self::Read => 'success',
             self::Failed => 'danger',
+            self::Received => 'success',
         };
     }
 
@@ -42,6 +45,7 @@ enum MessageStatus: string
             self::Delivered => 'heroicon-o-check-badge',
             self::Read => 'heroicon-o-eye',
             self::Failed => 'heroicon-o-x-circle',
+            self::Received => 'heroicon-o-inbox-arrow-down',
         };
     }
 }

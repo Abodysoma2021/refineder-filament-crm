@@ -20,5 +20,6 @@ return [
         'delivered' => 'Delivered',
         'read' => 'Read',
         'failed' => 'Failed',
+        'received' => 'Received',
     ],
 ];
