@@ -47,5 +47,11 @@ return [
         'session' => 'جلسة واتساب',
         'session_name' => 'الجلسة',
         'session_status' => 'الحالة',
+        'active_deal' => 'الصفقة النشطة',
+        'deal_history' => 'سجل الصفقات',
+        'deal_created' => 'أُنشئت',
+        'deal_closed_at' => 'أُغلقت',
+        'view_conversation' => 'عرض المحادثة',
+        'no_deals' => 'لا توجد صفقات بعد',
     ],
 ];

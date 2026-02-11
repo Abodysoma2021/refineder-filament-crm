@@ -18,6 +18,7 @@ use Refineder\FilamentCrm\Models\CrmContact;
 use Refineder\FilamentCrm\Models\CrmConversation;
 use Refineder\FilamentCrm\Models\CrmMessage;
 use Refineder\FilamentCrm\Models\WhatsappSession;
+use Refineder\FilamentCrm\Services\DealService;
 
 class WebhookController extends Controller
 {
@@ -154,6 +155,17 @@ class WebhookController extends Controller
 
         // Update contact
         $contact->update(['last_message_at' => now()]);
+
+        // Auto-create deal if needed (new customer or all deals closed)
+        try {
+            $dealService = app(DealService::class);
+            $dealService->autoCreateDealIfNeeded($session, $contact, $conversation, $messageBody);
+        } catch (\Exception $e) {
+            Log::error('Refineder CRM: Failed to auto-create deal', [
+                'contact_id' => $contact->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // Dispatch event
         event(new MessageReceived($message, $payload));

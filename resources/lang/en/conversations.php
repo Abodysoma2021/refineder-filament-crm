@@ -47,5 +47,11 @@ return [
         'session' => 'WhatsApp Session',
         'session_name' => 'Session',
         'session_status' => 'Status',
+        'active_deal' => 'Active Deal',
+        'deal_history' => 'Deal History',
+        'deal_created' => 'Created',
+        'deal_closed_at' => 'Closed',
+        'view_conversation' => 'View Chat',
+        'no_deals' => 'No deals yet',
     ],
 ];

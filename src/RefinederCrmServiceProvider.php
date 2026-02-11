@@ -47,6 +47,10 @@ class RefinederCrmServiceProvider extends PackageServiceProvider
         $this->app->singleton(Services\WasenderService::class, function ($app) {
             return new Services\WasenderService();
         });
+
+        $this->app->singleton(Services\DealService::class, function ($app) {
+            return new Services\DealService();
+        });
     }
 
     /**
