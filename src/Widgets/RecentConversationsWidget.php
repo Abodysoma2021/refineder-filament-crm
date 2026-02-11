@@ -17,6 +17,15 @@ class RecentConversationsWidget extends BaseWidget
 
     protected int | string | array $columnSpan = 'full';
 
+    /**
+     * Listen for real-time refresh events dispatched by GlobalNotificationListener.
+     *
+     * @var array<string, string>
+     */
+    protected $listeners = [
+        'crm-new-message' => '$refresh',
+    ];
+
     public function getTableHeading(): string
     {
         return __('refineder-crm::widgets.recent.heading');

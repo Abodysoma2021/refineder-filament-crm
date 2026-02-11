@@ -6,7 +6,11 @@ namespace Refineder\FilamentCrm;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Support\Facades\Blade;
 use Refineder\FilamentCrm\Livewire\ChatBox;
+use Refineder\FilamentCrm\Livewire\GlobalNotificationListener;
 use Refineder\FilamentCrm\Resources\ContactResource\ContactResource;
 use Refineder\FilamentCrm\Resources\ConversationResource\ConversationResource;
 use Refineder\FilamentCrm\Resources\DealResource\DealResource;
@@ -81,12 +85,17 @@ class RefinederCrmPlugin implements Plugin
             ->pages($pages)
             ->livewireComponents([
                 ChatBox::class,
+                GlobalNotificationListener::class,
             ]);
     }
 
     public function boot(Panel $panel): void
     {
-        //
+        // Inject global notification listener on every page
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn () => Blade::render('@livewire("refineder-crm-global-listener")'),
+        );
     }
 
     // --- Configuration Methods ---

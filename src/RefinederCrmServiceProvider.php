@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Livewire\Livewire;
 use Refineder\FilamentCrm\Http\Controllers\WebhookController;
 use Refineder\FilamentCrm\Livewire\ChatBox;
+use Refineder\FilamentCrm\Livewire\GlobalNotificationListener;
 use Refineder\FilamentCrm\Models\CrmConversation;
 use Refineder\FilamentCrm\Models\WhatsappSession;
 use Spatie\LaravelPackageTools\Package;
@@ -38,6 +39,7 @@ class RefinederCrmServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         Livewire::component('refineder-crm-chat-box', ChatBox::class);
+        Livewire::component('refineder-crm-global-listener', GlobalNotificationListener::class);
 
         $this->registerBroadcastChannels();
     }
@@ -68,6 +70,11 @@ class RefinederCrmServiceProvider extends PackageServiceProvider
             $session = WhatsappSession::find($sessionId);
 
             return $session && $session->user_id === $user->id;
+        });
+
+        // Global user channel for app-wide notifications
+        Broadcast::channel('crm.user.{userId}', function ($user, int $userId) {
+            return $user->id === $userId;
         });
     }
 }

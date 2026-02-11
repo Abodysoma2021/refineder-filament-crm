@@ -18,6 +18,15 @@ class CrmStatsWidget extends StatsOverviewWidget
 
     protected ?string $pollingInterval = '30s';
 
+    /**
+     * Listen for real-time refresh events dispatched by GlobalNotificationListener.
+     *
+     * @var array<string, string>
+     */
+    protected $listeners = [
+        'crm-new-message' => '$refresh',
+    ];
+
     protected function getStats(): array
     {
         $totalContacts = CrmContact::count();

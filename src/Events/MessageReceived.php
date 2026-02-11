@@ -24,13 +24,24 @@ class MessageReceived implements ShouldBroadcast
     /**
      * Get the channels the event should broadcast on.
      *
+     * Broadcasts on both the conversation-specific channel (for ChatBox)
+     * and the user-level channel (for global notifications on any page).
+     *
      * @return array<int, Channel>
      */
     public function broadcastOn(): array
     {
-        return [
+        $channels = [
             new PrivateChannel("crm.conversation.{$this->message->conversation_id}"),
         ];
+
+        // Also broadcast on user channel for global notifications
+        $conversation = $this->message->conversation;
+        if ($conversation && $conversation->user_id) {
+            $channels[] = new PrivateChannel("crm.user.{$conversation->user_id}");
+        }
+
+        return $channels;
     }
 
     /**
@@ -40,6 +51,19 @@ class MessageReceived implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
+        $conversation = $this->message->conversation;
+        $contact = $conversation?->contact;
+
+        // Find the active deal for this conversation
+        $deal = null;
+        if ($conversation) {
+            $dealModel = config('refineder-crm.models.deal', \Refineder\FilamentCrm\Models\CrmDeal::class);
+            $deal = $dealModel::where('conversation_id', $conversation->id)
+                ->whereNotIn('stage', ['won', 'lost'])
+                ->latest()
+                ->first();
+        }
+
         return [
             'id' => $this->message->id,
             'conversation_id' => $this->message->conversation_id,
@@ -50,6 +74,9 @@ class MessageReceived implements ShouldBroadcast
             'media_url' => $this->message->media_url,
             'time' => $this->message->created_at->format('H:i'),
             'date' => $this->message->created_at->format('Y-m-d'),
+            'contact_name' => $contact?->getDisplayName() ?? 'Unknown',
+            'contact_phone' => $contact?->phone,
+            'deal_id' => $deal?->id,
         ];
     }
 
