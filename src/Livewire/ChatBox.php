@@ -31,6 +31,38 @@ class ChatBox extends Component
         $this->conversation?->markAsRead();
     }
 
+    /**
+     * Get the listeners for Echo events.
+     * This enables real-time message receiving via Laravel Reverb/Echo.
+     *
+     * @return array<string, string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            "echo-private:crm.conversation.{$this->conversationId},.message.received" => 'onMessageReceived',
+            "echo-private:crm.conversation.{$this->conversationId},.message.sent" => 'onMessageSent',
+        ];
+    }
+
+    /**
+     * Handle a real-time message received event from Echo.
+     */
+    public function onMessageReceived(array $data): void
+    {
+        $this->loadMessages();
+        $this->conversation?->markAsRead();
+        $this->dispatch('message-received');
+    }
+
+    /**
+     * Handle a real-time message sent event from Echo.
+     */
+    public function onMessageSent(array $data): void
+    {
+        $this->loadMessages();
+    }
+
     public function loadConversation(): void
     {
         $this->conversation = CrmConversation::with(['contact', 'whatsappSession'])
@@ -109,7 +141,7 @@ class ChatBox extends Component
     }
 
     /**
-     * Poll for new messages.
+     * Poll for new messages (fallback when Echo/Reverb is not available).
      */
     public function pollMessages(): void
     {

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Refineder\FilamentCrm\Events;
 
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Refineder\FilamentCrm\Models\CrmMessage;
 
-class MessageReceived
+class MessageReceived implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -17,4 +20,44 @@ class MessageReceived
         public readonly CrmMessage $message,
         public readonly array $rawPayload = [],
     ) {}
+
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return array<int, Channel>
+     */
+    public function broadcastOn(): array
+    {
+        return [
+            new PrivateChannel("crm.conversation.{$this->message->conversation_id}"),
+        ];
+    }
+
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array<string, mixed>
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'id' => $this->message->id,
+            'conversation_id' => $this->message->conversation_id,
+            'body' => $this->message->body,
+            'type' => $this->message->type->value,
+            'is_from_me' => $this->message->is_from_me,
+            'status' => $this->message->status->value,
+            'media_url' => $this->message->media_url,
+            'time' => $this->message->created_at->format('H:i'),
+            'date' => $this->message->created_at->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * The event's broadcast name.
+     */
+    public function broadcastAs(): string
+    {
+        return 'message.received';
+    }
 }

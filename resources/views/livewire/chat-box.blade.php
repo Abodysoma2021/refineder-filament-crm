@@ -1,6 +1,8 @@
 <div
-    wire:poll.{{ config('refineder-crm.chat_poll_interval', 5) }}s="pollMessages"
+    wire:poll.{{ config('refineder-crm.chat_poll_interval', 15) }}s="pollMessages"
     class="flex flex-col h-[600px] bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+    x-data
+    x-on:message-received.window="$nextTick(() => { document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight })"
 >
     {{-- Chat Header --}}
     @if($conversation && $conversation->contact)
